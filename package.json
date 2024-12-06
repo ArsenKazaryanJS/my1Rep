@@ -1,0 +1,7 @@
+{"scripts": {
+  "start": "nodemon start"
+},
+  "dependencies": {
+    "nodemon": "^3.1.7"
+  }
+}
