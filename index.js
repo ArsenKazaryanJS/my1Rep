@@ -3,17 +3,16 @@ const path = require("path");
 const http = require("http");
 const port = 5000;
 
-const createPath = (...arg) =>
-  
-  path.join(__dirname, arg.join(",").replaceAll(",", "/"));
+
+const createPath = (...arg) => path.join(__dirname, arg.join(',').replaceAll(',', '/'))
 
 const server = http.createServer((req, res) => {
   if (req.url === "/" && req.method === "GET") {
     fs.promises
       .readFile(createPath("pages", "index.html"), "utf-8")
-      .then((res) => {
-        res.writeHead(200, { "content-type": "text.html" });
-        res.pwrite(res);
+      .then((data) => {
+        res.writeHead(200, { "content-type": "text/html" });
+        res.write(data);
         res.end();
       })
       .catch((err) => {
@@ -59,16 +58,17 @@ const server = http.createServer((req, res) => {
   } else if (req.url.includes("?") && req.method === "GET") {
     const index = req.url.indexOf("?") + 1;
     const queryParams = req.url.slice(index).split("=")[1];
-    fs.promises
-      .readFile(createPath("db", "users.json"), "utf-8")
+    fs.promises.readFile(createPath("db", "users.json"), "utf-8")
       .then((data) => {
         const users = JSON.parse(data);
-        const userSearch = users.filter((el) => el.firstName.indexOf(queryParams) > -1);
-        if (userSearch) {
-          res.writeHead(204, { "content-type": "application/json" });
+        const userSearch = users.filter((el) => el.firstName.toLowerCase().indexOf(queryParams.toLowerCase()) > -1);        
+        if (userSearch.length > 0) {
+          res.writeHead(200, { "content-type": "application/json" });
           res.write(JSON.stringify(userSearch));
           res.end();
-        }else{
+        }
+      
+        else{
           res.writeHead(404, { "content-type": "text/plain" });
           res.write(`User Name Not Found ${queryParams}`);
           res.end();
@@ -77,13 +77,51 @@ const server = http.createServer((req, res) => {
       .catch((err) => {
         console.log(err);
       });
-  }
+  }else if (req.url === '/api/users' && req.method === 'POST') {
+    let body = [];
+
+    req.on('data', (chunk) => body.push(chunk));
+
+    req.on('end', () => {
+        body = JSON.parse(body[0].toString());
+        fs.promises.readFile(createPath('db', 'users.json'), 'utf-8')
+        .then((data) => {
+          let users = JSON.parse(data)
+           users.push(body)
+         return fs.promises.writeFile(createPath('db', 'users.json'), JSON.stringify(users))
+        })
+      .catch((error) => {
+          console.error('Error writing to file:', error);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Internal Server Error' }));
+      });
+       
+       
+    });
+}
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 server.listen(port, (err) => {
   if (err) {
     console.log(err);
   } else {
-    console.log("Server Is Runing");
+    console.log(`Server Is Runing ${port} Port`);
   }
 });
+
+
